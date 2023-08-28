@@ -1,9 +1,14 @@
 package com.translate.papatap;
 
+// FloatingButtonService.java
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
+import android.os.Build;
 import android.os.IBinder;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 
@@ -14,35 +19,62 @@ public class FloatingButtonService extends Service {
     private WindowManager windowManager;
     private Button floatingButton;
 
+    private WindowManager.LayoutParams params;
+    private int initialX, initialY;
+    private float initialTouchX, initialTouchY;
+
     @Override
     public void onCreate() {
         super.onCreate();
 
-        // Window Manager 생성
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-        // 버튼 레이아웃 및 속성 설정
         floatingButton = new Button(this);
         floatingButton.setText("Floating Button");
 
-        // 버튼을 그리기 위한 레이아웃 파라미터 설정
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+        params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ?
+                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY :
+                        WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT
         );
 
-        // 버튼을 윈도우에 추가
+        params.gravity = Gravity.TOP | Gravity.START;
+        params.x = 0;
+        params.y = 0;
+
+        floatingButton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        initialX = params.x;
+                        initialY = params.y;
+                        initialTouchX = event.getRawX();
+                        initialTouchY = event.getRawY();
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        int offsetX = (int) (event.getRawX() - initialTouchX);
+                        int offsetY = (int) (event.getRawY() - initialTouchY);
+                        params.x = initialX + offsetX;
+                        params.y = initialY + offsetY;
+                        windowManager.updateViewLayout(floatingButton, params);
+                        return false;
+                    default:
+                        return false;
+                }
+            }
+        });
+
         windowManager.addView(floatingButton, params);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        // 서비스 종료 시 버튼을 제거
         if (floatingButton != null) {
             windowManager.removeView(floatingButton);
         }
@@ -54,5 +86,4 @@ public class FloatingButtonService extends Service {
         return null;
     }
 }
-
 

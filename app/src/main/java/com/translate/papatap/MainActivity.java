@@ -18,6 +18,8 @@ public class MainActivity extends AppCompatActivity {
     private View floatingButton;
     private float xDelta = 0f;
     private float yDelta = 0f;
+    private static final int OVERLAY_PERMISSION_REQUEST_CODE = 123; // 원하는 값으로 설정
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,14 +37,17 @@ public class MainActivity extends AppCompatActivity {
                 toggleFloatingButtonVisibility();
 
                 if (isFloatingButtonVisible) {
-                    startFloatingButtonService();
-                    floatingButton.setVisibility(View.VISIBLE); // 플로팅 버튼을 보이도록 설정
+                    if (!hasOverlayPermission()) {
+                        requestOverlayPermission();
+                    } else {
+                        startFloatingButtonService();
+                        floatingButton.setVisibility(View.VISIBLE); // 플로팅 버튼을 보이도록 설정
+                    }
                 } else {
                     floatingButton.setVisibility(View.INVISIBLE); // 플로팅 버튼을 숨기도록 설정
                 }
             }
         });
-
 
         floatingButton.setOnTouchListener(new OnTouchListener() {
             @Override
@@ -73,13 +78,31 @@ public class MainActivity extends AppCompatActivity {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this);
     }
 
+    private void requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST_CODE);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == OVERLAY_PERMISSION_REQUEST_CODE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+                startFloatingButtonService();
+                floatingButton.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
     private void toggleFloatingButtonVisibility() {
         isFloatingButtonVisible = !isFloatingButtonVisible;
         float translationY = isFloatingButtonVisible ? 0f : 200f;
         float alpha = isFloatingButtonVisible ? 1f : 0f;
         floatingButton.animate().translationY(translationY).alpha(alpha).start();
 
-        // 버튼 텍스트 변경
         Button startStopButton = findViewById(R.id.startStopButton);
         startStopButton.setText(isFloatingButtonVisible ? "Stop" : "Start");
     }
