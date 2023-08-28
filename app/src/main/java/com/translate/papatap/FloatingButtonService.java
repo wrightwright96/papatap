@@ -1,52 +1,85 @@
 package com.translate.papatap;
 
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
+import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.IBinder;
-
-import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.Button;
 
 public class FloatingButtonService extends Service {
-    private static final int NOTIFICATION_ID = 1;
-    private static final String CHANNEL_ID = "FloatingButtonChannel";
+    private WindowManager windowManager;
+    private View floatingButton;
+    private WindowManager.LayoutParams params;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        createNotificationChannel();
-        startForeground(NOTIFICATION_ID, createNotification());
+        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+
+        floatingButton = new Button(this);
+        ((Button) floatingButton).setText("Floating Button");
+
+        // Set the layout parameters for the floating button
+        params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ?
+                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY :
+                        WindowManager.LayoutParams.TYPE_PHONE,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                PixelFormat.TRANSLUCENT
+        );
+
+        params.gravity = Gravity.TOP | Gravity.LEFT;
+        params.x = 0;
+        params.y = 100;
+
+        // Set the touch listener for the floating button
+        floatingButton.setOnTouchListener(new View.OnTouchListener() {
+            private int initialX;
+            private int initialY;
+            private float initialTouchX;
+            private float initialTouchY;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        initialX = params.x;
+                        initialY = params.y;
+                        initialTouchX = event.getRawX();
+                        initialTouchY = event.getRawY();
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        params.x = initialX + (int) (event.getRawX() - initialTouchX);
+                        params.y = initialY + (int) (event.getRawY() - initialTouchY);
+                        windowManager.updateViewLayout(floatingButton, params);
+                        return true;
+                }
+                return false;
+            }
+        });
+
+        // Add the floating button to the window manager
+        windowManager.addView(floatingButton, params);
     }
 
-    @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Floating Button Service",
-                    NotificationManager.IMPORTANCE_DEFAULT
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            manager.createNotificationChannel(channel);
+    public void onDestroy() {
+        super.onDestroy();
+        // Remove the floating button from the window manager
+        if (floatingButton != null) {
+            windowManager.removeView(floatingButton);
         }
     }
 
-    private Notification createNotification() {
-        // 포그라운드 서비스에 대한 알림을 생성하고 반환합니다.
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Floating Button Service")
-                .setContentText("Floating button is active.")
-                .setSmallIcon(R.drawable.ic_notification_icon);
-
-        return builder.build();
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }

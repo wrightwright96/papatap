@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -14,6 +15,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Papatap"
         tools:targetApi="31">
+
+        <service
+            android:name=".FloatingButtonService"
+            android:enabled="true"
+            android:permission="android.permission.SYSTEM_ALERT_WINDOW"
+            tools:ignore="WrongManifestParent">
+        </service>
+
         <activity
             android:name=".MainActivity"
             android:exported="true">

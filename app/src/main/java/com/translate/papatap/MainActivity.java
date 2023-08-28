@@ -1,17 +1,15 @@
 package com.translate.papatap;
 
 import android.content.Intent;
-import android.graphics.PixelFormat;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -26,6 +24,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Add the code to start the FloatingButtonService here
+        Intent serviceIntent = new Intent(this, FloatingButtonService.class);
+        startService(serviceIntent);
 
         floatingButton = findViewById(R.id.floatingButton);
 
@@ -59,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
                     case MotionEvent.ACTION_DOWN:
                         xDelta = x - view.getTranslationX();
                         yDelta = y - view.getTranslationY();
-//                        break;
+                        break;
                     case MotionEvent.ACTION_MOVE:
                         view.setTranslationX(x - xDelta);
                         view.setTranslationY(y - yDelta);
@@ -116,28 +118,4 @@ public class MainActivity extends AppCompatActivity {
             startService(serviceIntent);
         }
     }
-
-//    private void makeButton() {
-//        try {
-//            Button btn = new Button(this);
-//            int flags = 0;
-//            if (Build.VERSION.SDK_INT >= 26) { //안드로이드 8 이상
-//                flags = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-//            }
-//            WindowManager.LayoutParams mParams = new WindowManager.LayoutParams(
-//                    -2, -2,
-//                    flags,
-//                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-//                    PixelFormat.TRANSLUCENT);
-//
-//            btn = new Button(this);
-//            btn.setText("버튼");
-//
-//            WindowManager mManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-//            mManager.addView(btn, mParams);
-//
-//        } catch (Exception e) {
-//            Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
-//        }
-//    }
 }
